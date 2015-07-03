@@ -78,6 +78,15 @@ func (ss *Session) Of(name string) (nameSpace *NameSpace) {
 	return
 }
 
+func (ss *Session) Disconnect() error {
+	for _, ns := range ss.nameSpaces {
+		if err := ns.Disconnect(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ss *Session) loop() {
 	err := ss.onOpen()
 	if err != nil {

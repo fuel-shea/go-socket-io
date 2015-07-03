@@ -114,6 +114,18 @@ func (ns *NameSpace) Emit(name string, args ...interface{}) error {
 	return nil
 }
 
+func (ns *NameSpace) Disconnect() error {
+	pack := new(disconnectPacket)
+	pack.endPoint = ns.endpoint
+
+	err := ns.sendPacket(pack)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ns *NameSpace) onPacket(packet Packet) {
 	switch p := packet.(type) {
 	case *disconnectPacket:
