@@ -98,10 +98,15 @@ func (srv *SocketIOServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// open
-	transport := newWebSocket(session)
+	websocketHandler := newWebSocket(session).webSocketHandler
+	noOpHandshake := func(c *websocket.Config, r *http.Request) error {
+		return nil
+	}
 
-	websocket.Handler(transport.webSocketHandler).ServeHTTP(w, r)
+	websocket.Server{
+		Handler:   websocketHandler,
+		Handshake: noOpHandshake,
+	}.ServeHTTP(w, r)
 }
 
 func (srv *SocketIOServer) Of(name string) *EventEmitter {
