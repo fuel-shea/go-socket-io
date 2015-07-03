@@ -43,10 +43,10 @@ func NewSocketIOServer(config *Config) *SocketIOServer {
 		server.authorize = config.Authorize
 	}
 	if server.heartbeatTimeout == 0 {
-		server.heartbeatTimeout = 15000
+		server.heartbeatTimeout = 15
 	}
 	if server.closingTimeout == 0 {
-		server.closingTimeout = 10000
+		server.closingTimeout = 10
 	}
 	if server.newSessionId == nil {
 		server.newSessionId = NewSessionID
