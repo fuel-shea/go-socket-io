@@ -80,13 +80,13 @@ func (srv *SocketIOServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spliter := strings.SplitN(path, "/", 2)
-	if len(spliter) < 2 {
+	splitter := strings.SplitN(path, "/", 2)
+	if len(splitter) < 2 {
 		http.NotFound(w, r)
 		return
 	}
 
-	transportName, sessionId := spliter[0], spliter[1]
+	transportName, sessionId := splitter[0], splitter[1]
 	if transportName != "websocket" {
 		http.Error(w, "not websocket", http.StatusBadRequest)
 		return
