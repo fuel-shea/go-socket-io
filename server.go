@@ -184,7 +184,7 @@ func (srv *SocketIOServer) handShake(w http.ResponseWriter, r *http.Request) {
 
 	session := srv.getSession(sessionId)
 	if session == nil {
-		session = NewSession(srv.eventEmitters, sessionId, srv.heartbeatTimeout, true, r)
+		session = GetSession(srv.eventEmitters, sessionId, srv.heartbeatTimeout, true, r)
 		srv.addSession(session)
 	}
 

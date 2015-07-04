@@ -18,6 +18,12 @@ const (
 
 var NotConnected = errors.New("not connected")
 
+var sessionPool = sync.Pool{
+	New: func() interface{} {
+		return &Session{}
+	},
+}
+
 type Session struct {
 	SessionId         string
 	mutex             sync.Mutex
@@ -48,19 +54,23 @@ func NewSessionID() string {
 	return string(b)
 }
 
-func NewSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request) *Session {
-	ret := &Session{
-		emitters:          emitters,
-		SessionId:         sessionId,
-		nameSpaces:        make(map[string]*NameSpace),
-		sendHeartBeat:     sendHeartbeat,
-		heartbeatTimeout:  time.Duration(timeout) * time.Second,
-		connectionTimeout: time.Duration(timeout*2/3) * time.Second,
-		Values:            make(map[interface{}]interface{}),
-		Request:           r,
-	}
-	ret.defaultNS = ret.Of("")
-	return ret
+func GetSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request) *Session {
+	ss := sessionPool.Get().(*Session)
+	ss.emitters = emitters
+	ss.SessionId = sessionId
+	ss.nameSpaces = make(map[string]*NameSpace)
+	ss.sendHeartBeat = sendHeartbeat
+	ss.heartbeatTimeout = time.Duration(timeout) * time.Second
+	ss.connectionTimeout = time.Duration(timeout*2/3) * time.Second
+	ss.Values = make(map[interface{}]interface{})
+	ss.Request = r
+	ss.defaultNS = ss.Of("")
+	return ss
+}
+
+func PutSession(ss *Session) {
+	ss.cleanup()
+	sessionPool.Put(ss)
 }
 
 func (ss *Session) Of(name string) (nameSpace *NameSpace) {
@@ -87,6 +97,11 @@ func (ss *Session) Disconnect() error {
 	return nil
 }
 
+func (ss *Session) cleanup() {
+	// remove all the references to other things
+	// remove the other things' references to this
+}
+
 func (ss *Session) loop() {
 	err := ss.onOpen()
 	if err != nil {
@@ -96,6 +111,7 @@ func (ss *Session) loop() {
 		for _, ns := range ss.nameSpaces {
 			ns.onDisconnect()
 		}
+		PutSession(ss)
 	}()
 
 	for {
