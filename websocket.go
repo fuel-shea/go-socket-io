@@ -46,3 +46,7 @@ func (ws *webSocket) webSocketHandler(conn *websocket.Conn) {
 	ws.conn = conn
 	ws.session.loop()
 }
+
+func (ws *webSocket) Close() error {
+	return ws.conn.Close()
+}

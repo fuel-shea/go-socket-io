@@ -8,6 +8,7 @@ import (
 type Transport interface {
 	Send([]byte) error
 	Read() (io.Reader, error)
+	Close() error
 }
 
 var (

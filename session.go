@@ -100,12 +100,11 @@ func (ss *Session) Disconnect() error {
 }
 
 func (ss *Session) cleanup() {
-	// remove reference from server
 	if ss.srv != nil {
-		ss.srv.removeSession(ss)
+		ss.srv.removeSession(ss) // remove reference from server
 	}
-	// TODO: remove reference to namespaces
-	// TODO: close websocket transport
+	ss.nameSpaces = map[string]*NameSpace{} // remove reference to namespaces
+	ss.transport.Close()                    // close websocket transport
 }
 
 func (ss *Session) loop() {
