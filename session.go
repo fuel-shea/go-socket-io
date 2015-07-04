@@ -38,6 +38,7 @@ type Session struct {
 	defaultNS         *NameSpace
 	Values            map[interface{}]interface{}
 	Request           *http.Request
+	srv               *SocketIOServer
 }
 
 func NewSessionID() string {
@@ -54,7 +55,7 @@ func NewSessionID() string {
 	return string(b)
 }
 
-func GetSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request) *Session {
+func GetSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request, srv *SocketIOServer) *Session {
 	ss := sessionPool.Get().(*Session)
 	ss.emitters = emitters
 	ss.SessionId = sessionId
@@ -64,6 +65,7 @@ func GetSession(emitters map[string]*EventEmitter, sessionId string, timeout int
 	ss.connectionTimeout = time.Duration(timeout*2/3) * time.Second
 	ss.Values = make(map[interface{}]interface{})
 	ss.Request = r
+	ss.srv = srv
 	ss.defaultNS = ss.Of("")
 	return ss
 }
@@ -98,8 +100,12 @@ func (ss *Session) Disconnect() error {
 }
 
 func (ss *Session) cleanup() {
-	// remove all the references to other things
-	// remove the other things' references to this
+	// remove reference from server
+	if ss.srv != nil {
+		ss.srv.removeSession(ss)
+	}
+	// TODO: remove reference to namespaces
+	// TODO: close websocket transport
 }
 
 func (ss *Session) loop() {
