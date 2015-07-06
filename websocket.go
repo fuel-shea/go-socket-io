@@ -3,6 +3,7 @@ package socketio
 import (
 	"bytes"
 	"code.google.com/p/go.net/websocket"
+	"errors"
 	"io"
 	"time"
 )
@@ -32,6 +33,10 @@ func (ws *webSocket) Send(data []byte) error {
 }
 
 func (ws *webSocket) Read() (io.Reader, error) {
+	if ws.conn == nil {
+		return nil, errors.New("Nil connection")
+	}
+
 	var ret string
 	ws.conn.SetReadDeadline(time.Now().Add(ws.timeout))
 	err := websocket.Message.Receive(ws.conn, &ret)
