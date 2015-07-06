@@ -105,7 +105,9 @@ func (ss *Session) cleanup() {
 	}
 	ss.nameSpaces = map[string]*NameSpace{}
 	ss.Request = nil
-	ss.transport.Close()
+	if ss.transport != nil {
+		ss.transport.Close()
+	}
 }
 
 func (ss *Session) loop() {

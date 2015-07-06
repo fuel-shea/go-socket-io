@@ -48,5 +48,9 @@ func (ws *webSocket) webSocketHandler(conn *websocket.Conn) {
 }
 
 func (ws *webSocket) Close() error {
-	return ws.conn.Close()
+	if ws.conn != nil {
+		return ws.conn.Close()
+	} else {
+		return nil
+	}
 }
