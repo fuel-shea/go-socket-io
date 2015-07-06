@@ -39,6 +39,7 @@ type Session struct {
 	Values            map[interface{}]interface{}
 	Request           *http.Request
 	srv               *SocketIOServer
+	didConnect        bool
 }
 
 func NewSessionID() string {
@@ -68,6 +69,8 @@ func NewSession(emitters map[string]*EventEmitter, sessionId string, timeout int
 		srv:               srv,
 	}
 	ss.defaultNS = ss.Of("")
+
+	go ss.killIfStalled()
 
 	return ss
 }
@@ -101,11 +104,13 @@ func (ss *Session) cleanup() {
 		ss.srv.removeSession(ss)
 	}
 	ss.nameSpaces = map[string]*NameSpace{}
-	ss.r = nil
+	ss.Request = nil
 	ss.transport.Close()
 }
 
 func (ss *Session) loop() {
+	ss.didConnect = true
+
 	err := ss.onOpen()
 	if err != nil {
 		return
@@ -200,4 +205,18 @@ func (ss *Session) onOpen() error {
 	ss.defaultNS.emit("connect", ss.defaultNS, nil)
 	ss.lastCheck, ss.peerLast = time.Now(), time.Now()
 	return err
+}
+
+func (ss *Session) killIfStalled() {
+	// Of course, this is not ideal.
+	// But we are moving away from 0.9.x, so we're
+	// accpeting the easiest way to prune zombie sessions.
+	loopUntil := time.Now().Add(time.Second)
+	for time.Now().Before(loopUntil) {
+		time.Sleep(50 * time.Millisecond)
+		if ss.didConnect {
+			return
+		}
+	}
+	ss.cleanup()
 }
