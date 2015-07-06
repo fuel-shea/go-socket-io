@@ -55,24 +55,21 @@ func NewSessionID() string {
 	return string(b)
 }
 
-func GetSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request, srv *SocketIOServer) *Session {
-	ss := sessionPool.Get().(*Session)
-	ss.emitters = emitters
-	ss.SessionId = sessionId
-	ss.nameSpaces = make(map[string]*NameSpace)
-	ss.sendHeartBeat = sendHeartbeat
-	ss.heartbeatTimeout = time.Duration(timeout) * time.Second
-	ss.connectionTimeout = time.Duration(timeout*2/3) * time.Second
-	ss.Values = make(map[interface{}]interface{})
-	ss.Request = r
-	ss.srv = srv
+func NewSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request, srv *SocketIOServer) *Session {
+	ss := &Session{
+		emitters:          emitters,
+		SessionId:         sessionId,
+		nameSpaces:        make(map[string]*NameSpace),
+		sendHeartBeat:     sendHeartbeat,
+		heartbeatTimeout:  time.Duration(timeout) * time.Second,
+		connectionTimeout: time.Duration(timeout*2/3) * time.Second,
+		Values:            make(map[interface{}]interface{}),
+		Request:           r,
+		srv:               srv,
+	}
 	ss.defaultNS = ss.Of("")
-	return ss
-}
 
-func PutSession(ss *Session) {
-	ss.cleanup()
-	sessionPool.Put(ss)
+	return ss
 }
 
 func (ss *Session) Of(name string) (nameSpace *NameSpace) {
@@ -101,10 +98,11 @@ func (ss *Session) Disconnect() error {
 
 func (ss *Session) cleanup() {
 	if ss.srv != nil {
-		ss.srv.removeSession(ss) // remove reference from server
+		ss.srv.removeSession(ss)
 	}
-	ss.nameSpaces = map[string]*NameSpace{} // remove reference to namespaces
-	ss.transport.Close()                    // close websocket transport
+	ss.nameSpaces = map[string]*NameSpace{}
+	ss.r = nil
+	ss.transport.Close()
 }
 
 func (ss *Session) loop() {
@@ -116,7 +114,7 @@ func (ss *Session) loop() {
 		for _, ns := range ss.nameSpaces {
 			ns.onDisconnect()
 		}
-		PutSession(ss)
+		ss.cleanup()
 	}()
 
 	for {
