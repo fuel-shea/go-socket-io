@@ -213,7 +213,7 @@ func (ss *Session) killIfStalled() {
 	// Of course, this is not ideal.
 	// But we are moving away from 0.9.x, so we're
 	// accpeting the easiest way to prune zombie sessions.
-	loopUntil := time.Now().Add(time.Second)
+	loopUntil := time.Now().Add(5 * time.Second)
 	for time.Now().Before(loopUntil) {
 		time.Sleep(50 * time.Millisecond)
 		if ss.didConnect {
