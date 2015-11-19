@@ -14,39 +14,45 @@ var (
 )
 
 type Config struct {
-	HeartbeatTimeout int
-	ClosingTimeout   int
-	NewSessionID     func() string
-	Transports       *TransportManager
-	Authorize        func(*http.Request, map[interface{}]interface{}) bool
+	HeartbeatInterval int
+	HeartbeatTimeout  int
+	ClosingTimeout    int
+	NewSessionID      func() string
+	Transports        *TransportManager
+	Authorize         func(*http.Request, map[interface{}]interface{}) bool
 }
 
 type SocketIOServer struct {
 	*http.ServeMux
-	mutex            sync.RWMutex
-	heartbeatTimeout int
-	closingTimeout   int
-	authorize        func(*http.Request, map[interface{}]interface{}) bool
-	newSessionId     func() string
-	transports       *TransportManager
-	sessions         map[string]*Session
-	eventEmitters    map[string]*EventEmitter
+	mutex             sync.RWMutex
+	heartbeatInterval int
+	heartbeatTimeout  int
+	closingTimeout    int
+	authorize         func(*http.Request, map[interface{}]interface{}) bool
+	newSessionId      func() string
+	transports        *TransportManager
+	sessions          map[string]*Session
+	eventEmitters     map[string]*EventEmitter
 }
 
 func NewSocketIOServer(config *Config) *SocketIOServer {
 	server := &SocketIOServer{ServeMux: http.NewServeMux()}
 	if config != nil {
+		server.heartbeatInterval = config.HeartbeatInterval
 		server.heartbeatTimeout = config.HeartbeatTimeout
 		server.closingTimeout = config.ClosingTimeout
 		server.newSessionId = config.NewSessionID
 		server.transports = config.Transports
 		server.authorize = config.Authorize
 	}
+	if server.heartbeatInterval == 0 {
+		server.heartbeatInterval = 15
+	}
 	if server.heartbeatTimeout == 0 {
-		server.heartbeatTimeout = 15
+		server.heartbeatTimeout = server.heartbeatInterval * 2
 	}
 	if server.closingTimeout == 0 {
-		server.closingTimeout = 10
+		server.closingTimeout = 30
 	}
 	if server.newSessionId == nil {
 		server.newSessionId = NewSessionID
@@ -184,7 +190,7 @@ func (srv *SocketIOServer) handShake(w http.ResponseWriter, r *http.Request) {
 
 	session := srv.getSession(sessionId)
 	if session == nil {
-		session = NewSession(srv.eventEmitters, sessionId, srv.heartbeatTimeout, true, r, srv)
+		session = NewSession(srv.eventEmitters, sessionId, srv.heartbeatInterval, srv.heartbeatTimeout, true, r, srv)
 		srv.addSession(session)
 	}
 

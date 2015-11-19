@@ -30,8 +30,8 @@ type Session struct {
 	emitters          map[string]*EventEmitter
 	nameSpaces        map[string]*NameSpace
 	transport         Transport
+	heartbeatInterval time.Duration
 	heartbeatTimeout  time.Duration
-	connectionTimeout time.Duration
 	peerLast          time.Time
 	lastCheck         time.Time
 	sendHeartBeat     bool
@@ -56,14 +56,14 @@ func NewSessionID() string {
 	return string(b)
 }
 
-func NewSession(emitters map[string]*EventEmitter, sessionId string, timeout int, sendHeartbeat bool, r *http.Request, srv *SocketIOServer) *Session {
+func NewSession(emitters map[string]*EventEmitter, sessionId string, heartbeatInterval int, heartbeatTimeout int, sendHeartbeat bool, r *http.Request, srv *SocketIOServer) *Session {
 	ss := &Session{
 		emitters:          emitters,
 		SessionId:         sessionId,
 		nameSpaces:        make(map[string]*NameSpace),
 		sendHeartBeat:     sendHeartbeat,
-		heartbeatTimeout:  time.Duration(timeout) * time.Second,
-		connectionTimeout: time.Duration(timeout*2/3) * time.Second,
+		heartbeatInterval: time.Duration(heartbeatInterval) * time.Second,
+		heartbeatTimeout:  time.Duration(heartbeatTimeout) * time.Second,
 		Values:            make(map[interface{}]interface{}),
 		Request:           r,
 		srv:               srv,
@@ -153,14 +153,14 @@ func (ss *Session) loop() {
 
 func (ss *Session) checkConnection() error {
 	now := time.Now()
-	if ss.sendHeartBeat && now.Sub(ss.lastCheck) > ss.heartbeatTimeout {
+	if ss.sendHeartBeat && now.Sub(ss.lastCheck) > ss.heartbeatInterval {
 		hb := new(heartbeatPacket)
 		if err := ss.defaultNS.sendPacket(hb); err != nil {
 			return err
 		}
 		ss.lastCheck = now
 	}
-	if now.Sub(ss.peerLast) > ss.connectionTimeout {
+	if now.Sub(ss.peerLast) > ss.heartbeatTimeout {
 		return NotConnected
 	}
 	return nil
