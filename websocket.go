@@ -2,8 +2,8 @@ package socketio
 
 import (
 	"bytes"
-	"code.google.com/p/go.net/websocket"
 	"errors"
+	"github.com/fuel-shea/copied-google-go-websocket"
 	"io"
 	"time"
 )

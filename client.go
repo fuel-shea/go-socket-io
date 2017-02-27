@@ -1,9 +1,9 @@
 package socketio
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"errors"
 	"fmt"
+	"github.com/fuel-shea/copied-google-go-websocket"
 	"io/ioutil"
 	"net/http"
 	"net/url"
