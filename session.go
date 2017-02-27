@@ -220,5 +220,6 @@ func (ss *Session) killIfStalled() {
 			return
 		}
 	}
+	ss.srv.onKillStalledConn()
 	ss.cleanup()
 }

@@ -20,6 +20,7 @@ type Config struct {
 	NewSessionID      func() string
 	Transports        *TransportManager
 	Authorize         func(*http.Request, map[interface{}]interface{}) bool
+	OnKillStalledConn func()
 }
 
 type SocketIOServer struct {
@@ -33,6 +34,7 @@ type SocketIOServer struct {
 	transports        *TransportManager
 	sessions          map[string]*Session
 	eventEmitters     map[string]*EventEmitter
+	onKillStalledConn func()
 }
 
 func NewSocketIOServer(config *Config) *SocketIOServer {
@@ -44,6 +46,7 @@ func NewSocketIOServer(config *Config) *SocketIOServer {
 		server.newSessionId = config.NewSessionID
 		server.transports = config.Transports
 		server.authorize = config.Authorize
+		server.onKillStalledConn = config.OnKillStalledConn
 	}
 	if server.heartbeatInterval == 0 {
 		server.heartbeatInterval = 15
@@ -59,6 +62,9 @@ func NewSocketIOServer(config *Config) *SocketIOServer {
 	}
 	if server.transports == nil {
 		server.transports = DefaultTransports
+	}
+	if server.onKillStalledConn == nil {
+		server.onKillStalledConn = func() {}
 	}
 	server.sessions = make(map[string]*Session)
 	server.eventEmitters = make(map[string]*EventEmitter)
